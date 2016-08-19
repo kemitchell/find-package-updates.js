@@ -1,9 +1,11 @@
 var ChangesStream = require('changes-stream')
+var ndjson = require('ndjson')
 var normalize = require('normalize-registry-metadata')
 var pump = require('pump')
 var through2 = require('through2')
 
 var NAME = process.argv[2]
+console.log(JSON.stringify({name: NAME}))
 
 pump(
   new ChangesStream({
@@ -12,17 +14,16 @@ pump(
     since: process.argv[3] ? parseInt(process.argv[2]) : 0
   }),
   through2.obj(function (chunk, _, done) {
-    if (!chunk.name || !chunk.versions) {
-      done()
-    } else {
-      var name = chunk.doc.name
-      if (name !== NAME) {
-        done()
-      } else {
-        normalize(chunk.doc)
-        done(null, JSON.stringify(chunk))
-      }
+    var seq = chunk.seq
+    if (seq % 1000 === 0) {
+      this.push({seq: seq})
     }
+    if (chunk.doc.name && chunk.doc.name === NAME) {
+      normalize(chunk.doc)
+      this.push(chunk)
+    }
+    done()
   }),
+  ndjson.stringify(),
   process.stdout
 )
