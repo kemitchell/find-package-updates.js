@@ -14,11 +14,7 @@ pump(
     since: process.argv[3] ? parseInt(process.argv[2]) : 0
   }),
   through2.obj(function (chunk, _, done) {
-    var seq = chunk.seq
-    if (seq % 1000 === 0) {
-      this.push({seq: seq})
-    }
-    if (chunk.doc.name && chunk.doc.name === NAME) {
+    if (chunk.id === NAME) {
       normalize(chunk.doc)
       this.push(chunk)
     }
